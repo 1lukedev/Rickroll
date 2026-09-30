@@ -3,48 +3,398 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rickrolling in progress....</title>
+  <title>About & Wall of Donors - Rickroll Project</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --pound-gold: #f59e0b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      background-color: #0f0f0f;
-      color: #ffffff;
-      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 70px; /* Prevents content from being hidden behind fixed footer */
+    }
+
+    /* Narrative Section */
+    .about-card {
+      max-width: 800px;
+      margin: 40px 20px 20px 20px;
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      line-height: 1.6;
+    }
+
+    h1 {
+      margin-top: 0;
+      color: var(--accent);
+      font-size: 1.8rem;
+    }
+
+    p {
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      margin-top: 10px;
+    }
+
+    .counter-badge {
+      display: inline-block;
+      margin: 15px 0;
+      padding: 10px 18px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .counter-badge span {
+      color: #ef4444;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 10px 18px;
+      background-color: var(--accent);
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .back-btn:hover {
+      background-color: #7dd3fc;
+    }
+
+    /* Interactive Donor Wall Section */
+    .wall-section {
+      width: 100%;
+      max-width: 1100px;
+      margin: 30px 0 20px 0;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .wall-instruction {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 15px;
+    }
+
+    .wall-viewport {
+      width: 100%;
+      height: 550px;
+      background: #020617;
+      border: 2px dashed rgba(255,255,255,0.15);
+      border-radius: 12px;
+      overflow: hidden;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      overflow: hidden;
-    }
-    .video-container {
       position: relative;
-      width: 90%;
-      max-width: 900px;
-      aspect-ratio: 16 / 9;
-      background: #000;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    iframe { width: 100%; height: 100%; border: none; }
+
+    .wall-grid {
+      display: grid;
+      grid-template-columns: repeat(11, 1fr);
+      grid-template-rows: repeat(6, 1fr);
+      gap: 6px;
+      width: 95%;
+      height: 90%;
+      transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+      transform-origin: center center;
+    }
+
+    /* Hover effect to trigger zoom-out into £1 shape */
+    .wall-viewport:hover .wall-grid {
+      transform: scale(0.68);
+    }
+
+    .donor-tile {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4px;
+      text-align: center;
+      transition: all 0.5s ease;
+      user-select: none;
+    }
+
+    .donor-name {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .donor-role {
+      font-size: 0.55rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* £1 Symbol Highlighted Tiles */
+    .donor-tile[data-pound="true"] {
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .wall-viewport:hover .donor-tile[data-pound="true"] {
+      background: var(--pound-gold);
+      border-color: #fef08a;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.8);
+    }
+
+    .wall-viewport:hover .donor-tile[data-pound="true"] .donor-name,
+    .wall-viewport:hover .donor-tile[data-pound="true"] .donor-role {
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    /* Non-symbol tiles darken during zoom */
+    .wall-viewport:hover .donor-tile[data-pound="false"] {
+      opacity: 0.2;
+    }
+
+    /* 24/7 Fixed Footer */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 48px;
+      background: rgba(15, 23, 42, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 9999;
+      font-size: 0.9rem;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .footer-text {
+      color: #cbd5e1;
+    }
+
+    .learn-btn {
+      padding: 4px 12px;
+      background-color: #38bdf8;
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: 700;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      transition: background-color 0.2s ease;
+    }
+
+    .learn-btn:hover {
+      background-color: #7dd3fc;
+    }
+
+    .counter-display {
+      font-weight: 600;
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    .counter-display span {
+      color: #ef4444;
+      font-weight: 800;
+      margin-left: 4px;
+    }
+
+    @media (max-width: 600px) {
+      footer {
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        height: 60px;
+        padding: 6px 10px;
+        font-size: 0.78rem;
+      }
+    }
   </style>
-  <script>
-    if (window.location.pathname.includes('.well-known')) {
-      document.open();
-      document.write('dh=4e9b033843323cf44dc27bf62ec4dd1496ffcd88');
-      document.close();
-    }
-  </script>
 </head>
 <body>
-  <div class="video-container">
-    <iframe 
-      src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0&modestbranding=1" 
-      title="Never Gonna Give You Up"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-      allowfullscreen>
-    </iframe>
+
+  <!-- Narrative Section -->
+  <div class="about-card">
+    <h1>About This Project</h1>
+    <p><strong>Developed and hosted by Luke, funded by The Net Worth Challenge.</strong></p>
+
+    <!-- Counter Display inside Card -->
+    <div class="counter-badge">
+      Total Times Rickrolled: <span class="visit-count">...</span>
+    </div>
+
+    <p>Every year, a team of passionate web designers, developers, and digital creators at an agency come together to create a fun, unexpected website just for the internet to enjoy.</p>
+    <p>To bring this year’s project to life, <strong>66 members of their team</strong> voluntarily donated £1 each toward the cause. That pooled fund covered the domain name, server setup, and hosting costs for this ad-free experience at <strong>rickrolling.co.uk</strong>.</p>
+    
+    <a href="index.html" class="back-btn">← Back to Main Site</a>
   </div>
+
+  <!-- Interactive Wall Section -->
+  <div class="wall-section">
+    <h2>The Wall of 66 Donors</h2>
+    <p class="wall-instruction">💡 <strong>Hover over the box below</strong> to zoom out and reveal the £1 coin graphic formed by all 66 agency contributors!</p>
+
+    <div class="wall-viewport">
+      <div class="wall-grid" id="wallGrid"></div>
+    </div>
+  </div>
+
+  <!-- 24/7 Fixed Footer -->
+  <footer>
+    <div class="footer-left">
+      <span class="footer-text">Developed and hosted by Luke, funded by The Net Worth Challenge</span>
+      <a href="index.html" class="learn-btn">Home</a>
+    </div>
+    
+    <div class="counter-display">
+      Times Rickrolled: <span class="visit-count">...</span>
+    </div>
+  </footer>
+
+  <script>
+    // 1. Fetch live CountAPI visits and sync both counter elements on the page
+    fetch('https://api.countapi.xyz/hit/rickrolling.co.uk/visits')
+      .then(res => res.json())
+      .then(data => {
+        const countStr = data.value.toLocaleString();
+        document.querySelectorAll('.visit-count').forEach(el => el.innerText = countStr);
+      })
+      .catch(() => {
+        document.querySelectorAll('.visit-count').forEach(el => el.innerText = '1+');
+      });
+
+    // 2. 66 Agency Donors Data (Names + Roles)
+    const donors = [
+      { name: "Sarah Adams", role: "Lead Designer" },
+      { name: "David Chen", role: "Full Stack Dev" },
+      { name: "Liam O'Brien", role: "UI/UX Designer" },
+      { name: "Emma Watson", role: "Project Manager" },
+      { name: "Marcus Vance", role: "SEO Specialist" },
+      { name: "Chloe Bennett", role: "Copywriter" },
+      { name: "James Wilson", role: "Backend Dev" },
+      { name: "Sofia Patel", role: "Frontend Dev" },
+      { name: "Oliver Taylor", role: "Art Director" },
+      { name: "Hannah Abbott", role: "QA Engineer" },
+      { name: "Noah Miller", role: "DevOps Lead" },
+
+      { name: "Amelia King", role: "Strategy Director" },
+      { name: "Lucas Scott", role: "Motion Designer" },
+      { name: "Mia Hall", role: "Content Lead" },
+      { name: "Ethan Wright", role: "JavaScript Specialist" },
+      { name: "Ava Green", role: "Brand Strategist" },
+      { name: "Mason Baker", role: "Systems Architect" },
+      { name: "Isabella Carter", role: "Social Manager" },
+      { name: "Logan Adams", role: "UI Engineer" },
+      { name: "Harper Turner", role: "Client Lead" },
+      { name: "Benjamin Hill", role: "Security Lead" },
+      { name: "Evelyn Phillips", role: "Illustrator" },
+
+      { name: "Jack Campbell", role: "Account Exec" },
+      { name: "Ella Parker", role: "UX Researcher" },
+      { name: "Alexander Evans", role: "Database Admin" },
+      { name: "Grace Edwards", role: "Media Planner" },
+      { name: "Henry Collins", role: "Cloud Engineer" },
+      { name: "Victoria Stewart", role: "Creative Director" },
+      { name: "Sebastian Sanchez", role: "App Developer" },
+      { name: "Lily Morris", role: "Digital Marketer" },
+      { name: "Jackson Rogers", role: "Frontend Dev" },
+      { name: "Zoe Reed", role: "Graphic Designer" },
+      { name: "Aiden Cook", role: "Technical Lead" },
+
+      { name: "Penelope Morgan", role: "PR Manager" },
+      { name: "Matthew Bell", role: "Web Analyst" },
+      { name: "Riley Murphy", role: "Content Creator" },
+      { name: "Samuel Bailey", role: "Infra Specialist" },
+      { name: "Nora Rivera", role: "CRO Specialist" },
+      { name: "David Cooper", role: "PHP Developer" },
+      { name: "Hazel Richardson", role: "Video Producer" },
+      { name: "Joseph Cox", role: "Operations Lead" },
+      { name: "Violet Howard", role: "3D Artist" },
+      { name: "Carter Ward", role: "Support Tech" },
+      { name: "Aurora Torres", role: "Event Lead" },
+
+      { name: "Wyatt Peterson", role: "Performance Marketer" },
+      { name: "Savannah Gray", role: "UI Designer" },
+      { name: "John Ramirez", role: "IT Admin" },
+      { name: "Brooklyn James", role: "Copy Lead" },
+      { name: "Owen Watson", role: "Full Stack Dev" },
+      { name: "Claire Brooks", role: "Marketing Director" },
+      { name: "Dylan Kelly", role: "Animation Tech" },
+      { name: "Skylar Sanders", role: "SEO Analyst" },
+      { name: "Luke Price", role: "System Admin" },
+      { name: "Paisley Bennett", role: "Account Lead" },
+      { name: "Grayson Wood", role: "Node Developer" },
+
+      { name: "Ellie Barnes", role: "Design Tech" },
+      { name: "Isaac Ross", role: "Security Analyst" },
+      { name: "Stella Henderson", role: "Media Buyer" },
+      { name: "Gabriel Coleman", role: "React Developer" },
+      { name: "Maya Jenkins", role: "UX Writer" },
+      { name: "Julian Perry", role: "Infrastructure" },
+      { name: "Aaliyah Powell", role: "Studio Director" },
+      { name: "Levi Long", role: "Site Tech" },
+      { name: "Elena Patterson", role: "Comms Director" },
+      { name: "Daniel Hughes", role: "Creative Strategist" },
+      { name: "Lucy Flores", role: "Project Coordinator" }
+    ];
+
+    // 3. Grid tile indices that form the £1 symbol
+    const poundShapeIndices = new Set([
+      2, 3, 4, 8, 9,
+      13, 19,
+      23, 24, 25, 26, 30,
+      35, 41,
+      45, 46, 47, 48, 49, 51, 52, 53
+    ]);
+
+    // 4. Render Grid Tiles
+    const gridContainer = document.getElementById('wallGrid');
+    donors.forEach((donor, index) => {
+      const tile = document.createElement('div');
+      tile.className = 'donor-tile';
+      tile.setAttribute('data-pound', poundShapeIndices.has(index + 1) ? 'true' : 'false');
+
+      tile.innerHTML = `
+        <div class="donor-name">${donor.name}</div>
+        <div class="donor-role">${donor.role}</div>
+      `;
+      gridContainer.appendChild(tile);
+    });
+  </script>
 </body>
 </html>
