@@ -3,166 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delta Serlby Park - Computing</title>
-    <!-- External Styles -->
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+    <title>iMedia Revision Kahoot</title>
     <style>
-        body { transition: opacity ease-in 0.2s; } 
-        body[unresolved] { opacity: 0; display: block; overflow: hidden; position: relative; } 
-
-        /* Styling for the D&C Banner Button */
-        .dnc-btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            background-color: #dfaa2b; /* Delta Gold */
-            color: #1e3a8a; /* Delta Navy */
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            background-color: #46178f; /* Kahoot Purple */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
             text-align: center;
-            border: none;
-            border-radius: 6px;
-            font-size: 1.2em;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background-color 0.2s, transform 0.1s;
         }
-        .dnc-btn:hover {
-            background-color: #c99722;
+
+        #quiz-container {
+            width: 90%;
+            max-width: 800px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            background: white;
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 0px #ccc;
+        }
+
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .answer-btn {
+            padding: 30px 20px;
+            font-size: 1.5rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0px 4px 0px rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .answer-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0px 0px 0px rgba(0,0,0,0.2);
+        }
+
+        .color-red { background-color: #e21b3c; }
+        .color-blue { background-color: #1368ce; }
+        .color-yellow { background-color: #d89e00; }
+        .color-green { background-color: #26890c; }
+
+        #score-screen {
+            display: none;
+            margin-top: 100px;
+        }
+
+        .input-group {
+            margin-top: 20px;
+        }
+
+        input[type="text"] {
+            padding: 15px;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        button.save-btn {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: bold;
+        }
+
+        #leaderboard {
+            margin-top: 30px;
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-left">
-            <a href="index.html"><img src="logo.jpg" alt="Delta Serlby Park Logo"></a>
+
+    <div id="quiz-container">
+        <h1 id="question-text">Loading Question...</h1>
+        <div class="answers-grid" id="answers-box">
+            <!-- Buttons injected here by JS -->
         </div>
-        <div class="header-center">
-            <h1>Serlby Park Computing</h1>
+    </div>
+
+    <div id="score-screen">
+        <h1>Quiz Complete!</h1>
+        <h2 id="final-score">Your Score: 0</h2>
+        <div class="input-group">
+            <input type="text" id="player-name" placeholder="Enter your name">
+            <button class="save-btn" onclick="saveScore()">Save to Leaderboard</button>
         </div>
-        <div class="header-right"></div>
-    </header>
-
-    <nav>
-        <button id="btn-year7" onclick="loadYear('year7')">Year 7</button>
-        <button id="btn-year8" onclick="loadYear('year8')">Year 8</button>
-        <button id="btn-year9" onclick="loadYear('year9')">Year 9</button>
-        <button id="btn-gcse" onclick="loadYear('gcse')">GCSE</button>
-    </nav>
-
-    <main>
-        <h2 id="year-title">Curriculum</h2>
-        
-        <!-- Dynamic Demonstrate & Connect Banner -->
-        <div id="dnc-container"></div>
-
-        <div id="content-grid" class="grid">
-            <!-- Cards are injected here by JavaScript -->
+        <div id="leaderboard">
+            <h3>High Scores (Firebase Data)</h3>
+            <ul id="score-list"></ul>
         </div>
-    </main>
+    </div>
 
-    <footer>
-        © 2026 Delta Serlby Park - Computing Department
-    </footer>
+    <!-- Firebase SDK (Modular V13.0.0) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-analytics.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
-    <script>
-        const curriculumData = {
-          year7: [
-            { title: "Delta Welcome", description: "<ul><li>Introduction/Computational Thinking</li><li>Keyboard Skills</li><li>Mouse Skills</li><li>File Management & Researching</li><li>E-Safety</li><li>Assessment</li></ul>" },
-            { title: "Microsoft Tools", description: "<ul><li>Word</li><li>PowerPoint</li><li>Email</li></ul>" },
-            { title: "Binary", description: "<ul><li>Binary to Denary</li><li>Denary to Binary</li></ul>" },
-            { title: "Assessment", description: "<ul><li>Revision</li><li>Assessment</li></ul>" },
-            { title: "Xmas", description: "<ul><li>TBA</li></ul>" },
-            { title: "Vector Graphics", description: "<ul><li>Pixel Power</li><li>Shape Squad</li><li>Build & Combine</li><li>Path Pros</li><li>Design Mission</li><li>Graphics Gallery</li></ul>" },
-            { title: "Computational Thinking", description: "<ul><li>Abstraction</li><li>Decomposition</li><li>Pattern Recognition</li><li>Algorithms</li><li>Flowcharts</li></ul>" },
-            { title: "Hardware & Software", description: "<ul><li>Hardware vs Software</li><li>Computer Systems</li><li>Inputs & Outputs</li><li>Storage</li><li>Graphics & Processing</li><li>TBA</li></ul>" },
-            { title: "Assessment", description: "<ul><li>Consolidation/Revision</li><li>Revision</li><li>Assessment</li></ul>" },
-            { title: "iDEA Award", description: "<ul><li>Citizen</li><li>Worker</li><li>Maker</li><li>Entrepreneur</li><li>Bronze Award</li></ul>" }
-          ],
-          year8: [
-            { title: "E-Safety", description: "<ul><li>E-Safety</li></ul>" },
-            { title: "Spreadsheets", description: "<ul><li>Data Entry</li><li>Formulas</li><li>Functions</li><li>Assessment</li></ul>" },
-            { title: "Pixel Art", description: "<ul><li>Basic Designs</li><li>Character Creation</li></ul>" },
-            { title: "Logical Thinking", description: "<ul><li>Computational Thinking Recap</li><li>Binary to Denary Recap</li><li>Denary to Binary Recap</li><li>Addition</li></ul>" },
-            { title: "Assessment", description: "<ul><li>Revision</li><li>Assessment</li></ul>" },
-            { title: "Xmas", description: "<ul><li>TBA</li></ul>" },
-            { title: "Edu Blocks", description: "<ul><li>Code Kickoff</li><li>Variable Vault</li><li>Input Impact</li><li>Choice Control</li><li>Loop Lab</li><li>The Big Build</li></ul>" },
-            { title: "Gaming", description: "<ul><li>Gaming Hardware</li><li>Objectives</li><li>Characters</li><li>Project</li><li>Showcase</li></ul>" },
-            { title: "Computing History", description: "<ul><li>1940 - 1959</li><li>1960 - 1979</li><li>1980 - 1999</li><li>2000 - 2019</li><li>2020 - Present Day</li><li>Timeline</li></ul>" },
-            { title: "Assessment", description: "<ul><li>Consolidation/Revision</li><li>Revision</li><li>Assessment</li></ul>" },
-            { title: "Minecraft Coding", description: "<ul><li>Python Option Available</li></ul>" }
-          ],
-          year9: [
-            { title: "E-Safety", description: "<ul><li>E-Safety</li></ul>" },
-            { title: "Python Programming", description: "<ul><li>Sequence</li><li>Selection</li><li>Iteration</li><li>Assessment</li></ul>" },
-            { title: "Binary & Hex", description: "<ul><li>Binary Conversions</li><li>Binary Addition & Shifts</li><li>Hexadecimal</li></ul>" },
-            { title: "Cyber Security", description: "<ul><li>Cyber Security</li><li>Hero or Criminal?</li><li>Malware</li></ul>" },
-            { title: "Assessment", description: "<ul><li>Revision</li><li>Assessment</li></ul>" },
-            { title: "Xmas", description: "<ul><li>TBA</li></ul>" },
-            { title: "Business", description: "<ul><li>Business Basics</li><li>Behind the Scenes</li><li>Brand Power</li><li>Decision Making</li><li>The Apprentice Challenge</li><li>The Big Showcase</li></ul>" },
-            { title: "Digital World", description: "<ul><li>Images</li><li>Compression (Lossy / Lossless)</li><li>Networks (LAN & WAN)</li><li>Logic Gates inc Boolean</li><li>Character Sets (ASCII / UNICODE)</li></ul>" },
-            { title: "AI & Ethics", description: "<ul><li>What is AI?</li><li>The Reality of AI</li><li>How AI Learns</li><li>Algorithmic Bias</li><li>Responsibility & Policy</li><li>The Grand Summary</li></ul>" },
-            { title: "Assessment", description: "<ul><li>Consolidation/Revision</li><li>Revision</li><li>Assessment</li></ul>" },
-            { title: "Photoshop", description: "<ul><li>Object Selection</li><li>Airbrushing</li><li>Filters</li><li>Composites</li><li>Project</li></ul>" }
-          ],
-          gcse: [
-            { title: "Creative iMedia", description: "<ul><li>R093 - Exam</li><li>R094 - Coursework</li><li>R097 - Coursework</li><li>Revision Hub</li></ul>" },
-            { title: "Enterprise", description: "<ul><li>Component 1 - Coursework</li><li>Component 2 - Coursework</li><li>Component 3 - Exam</li><li>Revision Hub</li></ul>" }
-          ]
+        // Your exact Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBVmSUK1Ju_DFUPR-70CKYTpaQ-hRjpXJU",
+            authDomain: "imedia-revision-quiz.firebaseapp.com",
+            projectId: "imedia-revision-quiz",
+            storageBucket: "imedia-revision-quiz.firebasestorage.app",
+            messagingSenderId: "598215626263",
+            appId: "1:598215626263:web:bec1944860957e6ab3d652",
+            measurementId: "G-2X21TSZJ3X"
         };
 
-        function loadYear(year) {
-            if (!curriculumData[year]) year = 'year7';
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
 
-            // Update Active Tab UI
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-            const activeBtn = document.getElementById('btn-' + year);
-            if (activeBtn) activeBtn.classList.add('active');
-
-            // Update Title
-            const titles = { year7: 'Year 7 Curriculum', year8: 'Year 8 Curriculum', year9: 'Year 9 Curriculum', gcse: 'GCSE Curriculum' };
-            document.getElementById('year-title').innerText = titles[year];
-
-            // Handle Demonstrate & Connect Banner (only for KS3)
-            const dncContainer = document.getElementById('dnc-container');
-            if (year.startsWith('year')) {
-                const yearNum = year.replace('year', '');
-                dncContainer.innerHTML = `<button class="dnc-btn" onclick="window.location.href='y${yearNum}-dnc.html'">📝 View Year ${yearNum} Demonstrate & Connect Tasks</button>`;
-            } else {
-                dncContainer.innerHTML = '';
+        // iMedia Quiz Data based on your revision site
+        const questions = [
+            {
+                question: "Which organisation is responsible for classifying films in the UK?",
+                answers: ["Ofcom", "PEGI", "BBFC", "ASA"],
+                correct: 2 // Index of correct answer (BBFC)
+            },
+            {
+                question: "Which document is best used to map out the scenes of a video product?",
+                answers: ["Mood Board", "Mind Map", "Visualisation Diagram", "Storyboard"],
+                correct: 3 
+            },
+            {
+                question: "Which of these is a lossy image compression format?",
+                answers: ["JPEG", "PNG", "TIFF", "BMP"],
+                correct: 0 
+            },
+            {
+                question: "What law protects the original work of creators from being copied?",
+                answers: ["Data Protection Act", "Copyright, Designs and Patents Act", "Computer Misuse Act", "Freedom of Information Act"],
+                correct: 1 
+            },
+            {
+                question: "Which method is an example of primary research?",
+                answers: ["Reading a book", "Using census data", "Conducting a questionnaire", "Looking at a website"],
+                correct: 2 
             }
+        ];
 
-            // Save preference
-            try { localStorage.setItem('lastViewedYearGroup', year); } catch (e) {}
+        const colors = ['color-red', 'color-blue', 'color-yellow', 'color-green'];
+        let currentQuestion = 0;
+        let score = 0;
 
-            // Populate Grid
-            const grid = document.getElementById('content-grid');
-            grid.innerHTML = ''; 
-            
-            curriculumData[year].forEach((unit, index) => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                const fileName = unit.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.html';
-                card.onclick = () => { window.location.href = fileName; };
+        const questionText = document.getElementById('question-text');
+        const answersBox = document.getElementById('answers-box');
+        const quizContainer = document.getElementById('quiz-container');
+        const scoreScreen = document.getElementById('score-screen');
 
-                let subtitleHtml = year === 'gcse' ? '' : `<div class="card-subtitle">UNIT ${index + 1} • COMPUTING</div>`;
-                card.innerHTML = `
-                    ${subtitleHtml}
-                    <div class="card-title">${unit.title}</div>
-                    <div class="card-body">${unit.description}</div>
-                    <button class="card-btn">View Lesson Materials</button>
-                `;
-                grid.appendChild(card);
+        window.loadQuestion = function() {
+            answersBox.innerHTML = '';
+            let q = questions[currentQuestion];
+            questionText.innerText = q.question;
+
+            q.answers.forEach((ans, index) => {
+                let btn = document.createElement('button');
+                btn.className = `answer-btn ${colors[index]}`;
+                btn.innerText = ans;
+                btn.onclick = () => checkAnswer(index);
+                answersBox.appendChild(btn);
             });
         }
 
-        window.onload = () => {
-            let savedYear = 'year7';
-            try { savedYear = localStorage.getItem('lastViewedYearGroup') || 'year7'; } catch (e) {}
-            loadYear(savedYear);
-        };
+        window.checkAnswer = function(selectedIndex) {
+            if (selectedIndex === questions[currentQuestion].correct) {
+                score += 1000; // Kahoot style scoring
+            }
+            
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                loadQuestion();
+            } else {
+                endQuiz();
+            }
+        }
+
+        window.endQuiz = function() {
+            quizContainer.style.display = 'none';
+            scoreScreen.style.display = 'block';
+            document.getElementById('final-score').innerText = `Your Score: ${score}`;
+            loadLeaderboard();
+        }
+
+        window.saveScore = async function() {
+            const name = document.getElementById('player-name').value;
+            if(!name) return alert('Please enter a name, my friend!');
+
+            try {
+                await addDoc(collection(db, "imedia_scores"), {
+                    name: name,
+                    score: score,
+                    timestamp: new Date()
+                });
+                alert('Score saved successfully! Excellent job!');
+                document.getElementById('player-name').value = ''; // Clear input
+                loadLeaderboard();
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alert("Cannot save score. Did you remember to set up the Firestore Database and set it to Test Mode in the console, yaar?");
+            }
+        }
+
+        window.loadLeaderboard = async function() {
+            const list = document.getElementById('score-list');
+            list.innerHTML = 'Loading...';
+            
+            try {
+                const q = query(collection(db, "imedia_scores"), orderBy("score", "desc"), limit(5));
+                const querySnapshot = await getDocs(q);
+                list.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let li = document.createElement('li');
+                    li.innerText = `${data.name} - ${data.score} points`;
+                    list.appendChild(li);
+                });
+            } catch (e) {
+                console.error("Error loading leaderboard: ", e);
+                list.innerHTML = "Cannot load leaderboard. Make sure Firestore is set to Test Mode.";
+            }
+        }
+
+        // Start the quiz
+        loadQuestion();
     </script>
 </body>
 </html>
