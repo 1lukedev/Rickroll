@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iMedia Revision Kahoot</title>
+    <title>iMedia Live Quiz</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
         
@@ -11,7 +11,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Montserrat', sans-serif;
-            background-color: #46178f; /* Kahoot Purple */
+            background-color: #46178f;
             color: white;
             display: flex;
             flex-direction: column;
@@ -20,31 +20,68 @@
             text-align: center;
         }
 
-        #quiz-container {
+        .view {
+            display: none;
             width: 90%;
             max-width: 800px;
             margin-top: 50px;
+            flex-direction: column;
+            align-items: center;
         }
+
+        .active { display: flex; }
 
         h1 {
             font-size: 2.5rem;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             background: white;
             color: #333;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0px 4px 0px #ccc;
+            width: 100%;
+        }
+
+        .btn {
+            padding: 20px 40px;
+            font-size: 1.5rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            color: white;
+            background-color: #333;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0px 4px 0px rgba(0,0,0,0.2);
+            margin: 10px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+
+        input {
+            padding: 20px;
+            font-size: 1.5rem;
+            border-radius: 5px;
+            border: none;
+            margin: 10px;
+            font-family: 'Montserrat', sans-serif;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
         }
 
         .answers-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+            width: 100%;
             margin-top: 20px;
         }
 
         .answer-btn {
-            padding: 30px 20px;
+            padding: 40px 20px;
             font-size: 1.5rem;
             font-family: 'Montserrat', sans-serif;
             font-weight: 700;
@@ -53,12 +90,6 @@
             border-radius: 5px;
             cursor: pointer;
             box-shadow: 0px 4px 0px rgba(0,0,0,0.2);
-            transition: transform 0.1s, box-shadow 0.1s;
-        }
-
-        .answer-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0px 0px 0px rgba(0,0,0,0.2);
         }
 
         .color-red { background-color: #e21b3c; }
@@ -66,75 +97,78 @@
         .color-yellow { background-color: #d89e00; }
         .color-green { background-color: #26890c; }
 
-        #score-screen {
-            display: none;
-            margin-top: 100px;
-        }
-
-        .input-group {
+        #player-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
             margin-top: 20px;
         }
 
-        input[type="text"] {
-            padding: 15px;
-            font-size: 1.2rem;
-            border-radius: 5px;
-            border: none;
-            outline: none;
-            font-family: 'Montserrat', sans-serif;
-        }
-
-        button.save-btn {
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            background-color: #333;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: bold;
-        }
-
-        #leaderboard {
-            margin-top: 30px;
+        .player-tag {
             background: white;
             color: black;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: left;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 1.2rem;
         }
+
+        #host-controls { margin-top: 30px; }
     </style>
 </head>
 <body>
 
-    <div id="quiz-container">
+    <!-- HOME SCREEN -->
+    <div id="home-view" class="view active">
+        <h1>iMedia Revision Quiz</h1>
+        <button class="btn color-blue" onclick="showView('join-view')">Join Quiz</button>
+        <button class="btn color-green" onclick="createQuiz()">Create Quiz (Host)</button>
+    </div>
+
+    <!-- JOIN SCREEN -->
+    <div id="join-view" class="view">
+        <h1>Join a Game</h1>
+        <input type="text" id="pin-input" placeholder="Game PIN (e.g. 1234)">
+        <input type="text" id="name-input" placeholder="Your Nickname">
+        <button class="btn color-blue" onclick="joinQuiz()">Enter Game</button>
+        <button class="btn" onclick="showView('home-view')">Back</button>
+    </div>
+
+    <!-- HOST LOBBY -->
+    <div id="host-lobby-view" class="view">
+        <h1>Game PIN: <span id="display-pin">...</span></h1>
+        <h2>Waiting for players...</h2>
+        <div id="player-list"></div>
+        <button class="btn color-green" onclick="startGame()" style="margin-top: 30px;">Start Game</button>
+    </div>
+
+    <!-- PLAYER WAITING LOBBY -->
+    <div id="player-lobby-view" class="view">
+        <h1 id="welcome-msg">You're in!</h1>
+        <h2>See your nickname on screen.</h2>
+        <p>Waiting for the host to start the game...</p>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-view" class="view">
         <h1 id="question-text">Loading Question...</h1>
-        <div class="answers-grid" id="answers-box">
-            <!-- Buttons injected here by JS -->
+        <div class="answers-grid" id="answers-box"></div>
+        <div id="host-controls" style="display: none;">
+            <button class="btn color-blue" onclick="nextQuestion()">Next Question >></button>
         </div>
     </div>
 
-    <div id="score-screen">
-        <h1>Quiz Complete!</h1>
-        <h2 id="final-score">Your Score: 0</h2>
-        <div class="input-group">
-            <input type="text" id="player-name" placeholder="Enter your name">
-            <button class="save-btn" onclick="saveScore()">Save to Leaderboard</button>
-        </div>
-        <div id="leaderboard">
-            <h3>High Scores (Firebase Data)</h3>
-            <ul id="score-list"></ul>
-        </div>
+    <!-- LEADERBOARD SCREEN -->
+    <div id="leaderboard-view" class="view">
+        <h1>Final Scores</h1>
+        <div id="final-scores-list" style="background: white; color: black; width: 100%; border-radius: 10px; padding: 20px;"></div>
+        <button class="btn" onclick="location.reload()" style="margin-top: 20px;">Play Again</button>
     </div>
 
-    <!-- Firebase SDK (Modular V13.0.0) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-analytics.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
-        // Your exact Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBVmSUK1Ju_DFUPR-70CKYTpaQ-hRjpXJU",
             authDomain: "imedia-revision-quiz.firebaseapp.com",
@@ -145,124 +179,179 @@
             measurementId: "G-2X21TSZJ3X"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
-        // iMedia Quiz Data based on your revision site
         const questions = [
-            {
-                question: "Which organisation is responsible for classifying films in the UK?",
-                answers: ["Ofcom", "PEGI", "BBFC", "ASA"],
-                correct: 2 // Index of correct answer (BBFC)
-            },
-            {
-                question: "Which document is best used to map out the scenes of a video product?",
-                answers: ["Mood Board", "Mind Map", "Visualisation Diagram", "Storyboard"],
-                correct: 3 
-            },
-            {
-                question: "Which of these is a lossy image compression format?",
-                answers: ["JPEG", "PNG", "TIFF", "BMP"],
-                correct: 0 
-            },
-            {
-                question: "What law protects the original work of creators from being copied?",
-                answers: ["Data Protection Act", "Copyright, Designs and Patents Act", "Computer Misuse Act", "Freedom of Information Act"],
-                correct: 1 
-            },
-            {
-                question: "Which method is an example of primary research?",
-                answers: ["Reading a book", "Using census data", "Conducting a questionnaire", "Looking at a website"],
-                correct: 2 
-            }
+            { q: "Which organisation classifies films in the UK?", a: ["Ofcom", "PEGI", "BBFC", "ASA"], correct: 2 },
+            { q: "Which document maps out video product scenes?", a: ["Mood Board", "Mind Map", "Visualisation", "Storyboard"], correct: 3 },
+            { q: "Which is a lossy image format?", a: ["JPEG", "PNG", "TIFF", "BMP"], correct: 0 },
+            { q: "What protects original creative work?", a: ["Data Act", "Copyright Act", "Misuse Act", "FOI Act"], correct: 1 }
         ];
 
+        let isHost = false;
+        let gamePin = "";
+        let playerName = "";
+        let myScore = 0;
+        let currentQIndex = -1;
+        let gameListener = null;
+
         const colors = ['color-red', 'color-blue', 'color-yellow', 'color-green'];
-        let currentQuestion = 0;
-        let score = 0;
 
-        const questionText = document.getElementById('question-text');
-        const answersBox = document.getElementById('answers-box');
-        const quizContainer = document.getElementById('quiz-container');
-        const scoreScreen = document.getElementById('score-screen');
+        window.showView = function(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        };
 
-        window.loadQuestion = function() {
-            answersBox.innerHTML = '';
-            let q = questions[currentQuestion];
-            questionText.innerText = q.question;
+        window.createQuiz = async function() {
+            isHost = true;
+            gamePin = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digit PIN
+            
+            await setDoc(doc(db, "live_games", gamePin), {
+                state: "lobby",
+                questionIndex: -1
+            });
 
-            q.answers.forEach((ans, index) => {
-                let btn = document.createElement('button');
-                btn.className = `answer-btn ${colors[index]}`;
-                btn.innerText = ans;
-                btn.onclick = () => checkAnswer(index);
-                answersBox.appendChild(btn);
+            document.getElementById("display-pin").innerText = gamePin;
+            showView("host-lobby-view");
+
+            // Listen for players joining
+            onSnapshot(collection(db, "live_games", gamePin, "players"), (snapshot) => {
+                const list = document.getElementById("player-list");
+                list.innerHTML = "";
+                snapshot.forEach(doc => {
+                    list.innerHTML += `<div class="player-tag">${doc.id}</div>`;
+                });
+            });
+        };
+
+        window.joinQuiz = async function() {
+            const pin = document.getElementById("pin-input").value;
+            const name = document.getElementById("name-input").value;
+            
+            if(!pin || !name) return alert("Please enter both PIN and Name!");
+
+            const gameRef = doc(db, "live_games", pin);
+            const gameSnap = await getDoc(gameRef);
+
+            if (gameSnap.exists() && gameSnap.data().state === "lobby") {
+                isHost = false;
+                gamePin = pin;
+                playerName = name;
+
+                // Add player to subcollection
+                await setDoc(doc(db, "live_games", gamePin, "players", playerName), { score: 0 });
+                
+                document.getElementById("welcome-msg").innerText = `Welcome, ${playerName}!`;
+                showView("player-lobby-view");
+
+                // Listen for host starting the game
+                listenToGameState();
+            } else {
+                alert("Game not found or already started, yaar!");
+            }
+        };
+
+        window.startGame = async function() {
+            await updateDoc(doc(db, "live_games", gamePin), {
+                state: "playing",
+                questionIndex: 0
+            });
+            listenToGameState(); 
+        };
+
+        function listenToGameState() {
+            if(gameListener) gameListener(); // Clear old listener
+            
+            gameListener = onSnapshot(doc(db, "live_games", gamePin), (snapshot) => {
+                const data = snapshot.data();
+                if(!data) return;
+
+                if (data.state === "playing" && data.questionIndex !== currentQIndex) {
+                    currentQIndex = data.questionIndex;
+                    renderQuestion(currentQIndex);
+                } else if (data.state === "ended") {
+                    showLeaderboard();
+                }
             });
         }
 
-        window.checkAnswer = function(selectedIndex) {
-            if (selectedIndex === questions[currentQuestion].correct) {
-                score += 1000; // Kahoot style scoring
+        function renderQuestion(index) {
+            showView("game-view");
+            if(index >= questions.length) {
+                if(isHost) endQuiz();
+                return;
             }
+
+            const q = questions[index];
+            document.getElementById("question-text").innerText = q.q;
             
-            currentQuestion++;
-            if (currentQuestion < questions.length) {
-                loadQuestion();
+            const answersBox = document.getElementById("answers-box");
+            answersBox.innerHTML = "";
+            
+            q.a.forEach((ans, i) => {
+                let btn = document.createElement('button');
+                btn.className = `answer-btn ${colors[i]}`;
+                btn.innerText = ans;
+                
+                // Only players can click answers, host just watches
+                if (!isHost) {
+                    btn.onclick = () => submitAnswer(i, q.correct, btn);
+                }
+                answersBox.appendChild(btn);
+            });
+
+            if(isHost) {
+                document.getElementById("host-controls").style.display = "block";
+            }
+        }
+
+        window.submitAnswer = async function(selectedIndex, correctIndex, clickedBtn) {
+            // Disable buttons after answering to prevent spamming
+            const buttons = document.querySelectorAll('.answer-btn');
+            buttons.forEach(b => b.disabled = true);
+
+            if (selectedIndex === correctIndex) {
+                myScore += 1000;
+                clickedBtn.style.border = "5px solid white"; // Highlight correct
+                // Sync score to database
+                await updateDoc(doc(db, "live_games", gamePin, "players", playerName), { score: myScore });
+            } else {
+                clickedBtn.style.opacity = "0.5"; // Dim wrong answer
+            }
+        }
+
+        window.nextQuestion = async function() {
+            const nextIdx = currentQIndex + 1;
+            if (nextIdx < questions.length) {
+                await updateDoc(doc(db, "live_games", gamePin), { questionIndex: nextIdx });
             } else {
                 endQuiz();
             }
         }
 
-        window.endQuiz = function() {
-            quizContainer.style.display = 'none';
-            scoreScreen.style.display = 'block';
-            document.getElementById('final-score').innerText = `Your Score: ${score}`;
-            loadLeaderboard();
-        }
-
-        window.saveScore = async function() {
-            const name = document.getElementById('player-name').value;
-            if(!name) return alert('Please enter a name, my friend!');
-
-            try {
-                await addDoc(collection(db, "imedia_scores"), {
-                    name: name,
-                    score: score,
-                    timestamp: new Date()
-                });
-                alert('Score saved successfully! Excellent job!');
-                document.getElementById('player-name').value = ''; // Clear input
-                loadLeaderboard();
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                alert("Cannot save score. Did you remember to set up the Firestore Database and set it to Test Mode in the console, yaar?");
+        window.endQuiz = async function() {
+            if(isHost) {
+                await updateDoc(doc(db, "live_games", gamePin), { state: "ended" });
             }
         }
 
-        window.loadLeaderboard = async function() {
-            const list = document.getElementById('score-list');
-            list.innerHTML = 'Loading...';
+        async function showLeaderboard() {
+            showView("leaderboard-view");
+            const list = document.getElementById("final-scores-list");
+            list.innerHTML = "<h2>Loading scores...</h2>";
             
-            try {
-                const q = query(collection(db, "imedia_scores"), orderBy("score", "desc"), limit(5));
-                const querySnapshot = await getDocs(q);
-                list.innerHTML = '';
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    let li = document.createElement('li');
-                    li.innerText = `${data.name} - ${data.score} points`;
-                    list.appendChild(li);
-                });
-            } catch (e) {
-                console.error("Error loading leaderboard: ", e);
-                list.innerHTML = "Cannot load leaderboard. Make sure Firestore is set to Test Mode.";
-            }
+            const q = query(collection(db, "live_games", gamePin, "players"), orderBy("score", "desc"));
+            const querySnapshot = await getDocs(q);
+            
+            list.innerHTML = "";
+            let rank = 1;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                list.innerHTML += `<h2 style="margin: 10px 0;">#${rank} ${doc.id} - ${data.score} pts</h2>`;
+                rank++;
+            });
         }
-
-        // Start the quiz
-        loadQuestion();
     </script>
 </body>
 </html>
